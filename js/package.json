@@ -1,0 +1,16 @@
+{
+  "name": "ssmpl",
+  "version": "1.0.0",
+  "description": "Static Site · Multi-Password Lock — 静态站多密码锁: password-based key wrapping (密本) to gate content on a fully static site. JS / Python / C++.",
+  "type": "module",
+  "main": "src/ssmpl.js",
+  "bin": { "ssmpl": "src/ssmpl-cli.js" },
+  "scripts": {
+    "test": "node test/test.js",
+    "cli:encrypt": "node src/ssmpl-cli.js encrypt",
+    "cli:addpass": "node src/ssmpl-cli.js addpass",
+    "cli:decrypt": "node src/ssmpl-cli.js decrypt"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
