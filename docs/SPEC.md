@@ -64,6 +64,23 @@ A single JSON blob (`ssmpl` version, config, items). Binary fields are **base64*
 - A reader tries **each** 密本 in `books`: recompute `P` from the typed password, recover `K`,
   attempt decrypt; if it fails (wrong key), **try the next 密本**. If all fail → wrong password.
 
+### Per-article, per-user access control (via 密本 presence)
+
+Each item's `books` list is **independent per item**. Because a cipher-book only unlocks the one
+item it was made for (it wraps that item's specific K), you can gate access **per article, per
+user** purely by which cipher-books an article carries:
+
+- **grant** a user an article → `add_password(item, user_password, admin_password, cfg)`
+  (adds a 密本 = that user's P xor item's K to that item only);
+- **deny** an article → don't add their cipher-book to that item (they cannot recover K);
+- **revoke** an article → `remove_password(item, user_password, cfg)` (drops their cipher-book, no re-encrypt).
+
+A single public JSON therefore expresses "user A reads X/Y, user B reads only Y, admin reads all".
+
+Limits (by design of a static site): each user needs a distinct password; revocation removes the
+cipher-book, not the ciphertext, so a user who already saved a cipher-book keeps reading; users can
+share their password/cipher-book; the payload is public so weak passwords remain offline-attackable.
+
 ---
 
 ## API (the same ideas in all three languages)
@@ -76,6 +93,7 @@ Backend (encrypt / derive 密本 / multi-password) — Python, C++, JS:
 | `encrypt(plaintext, password, cfg)` | new random K, AES-encrypt, produce an **item** (one 密本) |
 | `get_key(item, password, cfg)` | recover content key K by trying item's 密本s |
 | `add_password(item, new_password, unlock_password, cfg)` | append a 密本 for `new_password`, **no re-encrypt** |
+| `remove_password(item, password, cfg)` | drop `password`'s 密本 from one item — **revoke access, no re-encrypt** |
 | `decrypt(item, password, cfg)` | two-way: recover plaintext |
 
 Frontend (decrypt only, browser) — JS (WebCrypto):

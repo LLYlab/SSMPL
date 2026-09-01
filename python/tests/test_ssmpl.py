@@ -2,7 +2,7 @@
 """SSMPL Python self-test. Run: py -3.9 python/tests/test_ssmpl.py"""
 import os, sys, json
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from ssmpl import Config, encrypt_item, decrypt_item, add_password, get_key, Lock, b64e, b64d
+from ssmpl import Config, encrypt_item, decrypt_item, add_password, remove_password, get_key, Lock, b64e, b64d
 
 SALT = bytes(range(16))
 pass_n = fail_n = 0
@@ -53,6 +53,13 @@ check("decrypt story", lock.decrypt("story") == "黄文正文·第一章 secret 
 lock_cbc = Lock(json.loads(json.dumps({**blob, "cipher":"AES-256-CBC-HMAC-SHA256", "items":{"c":ic}})))
 check("CBC Lock unlock", lock_cbc.unlock("cbc1") is True)
 check("CBC Lock decrypt", lock_cbc.decrypt("c") == "cbc data 数据")
+
+print("# per-user gating (grant / revoke by 密本 presence, no re-encrypt)")
+article_a = add_password(item, "zhang", "alpha", GCM)   # 张三 can read
+article_a2 = remove_password(article_a, "beta", GCM)     # revoke beta from this article
+check("zhang reads after grant", decrypt_item(article_a2, "zhang", GCM) == "黄文正文·第一章 secret content")
+check("beta revoked from this article", endswith_wrong(article_a2, "beta", GCM))
+check("revoke kept ciphertext unchanged", article_a2["ct"] == item["ct"] and article_a2["iv"] == item["iv"])
 
 print("# setters (chainable)")
 check("set_* chainable", isinstance(Config().set_hash("SHA-256"), Config))

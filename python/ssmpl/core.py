@@ -128,6 +128,22 @@ def add_password(item, new_password, unlock_password, cfg):
     item["books"] = list(item.get("books", [])) + [b64e(compute_book(P, K))]
     return item
 
+def remove_password(item, password, cfg):
+    """Drop a password's 密本 from ONE item (revoke access). No re-encryption."""
+    c = norm(cfg)
+    P = derive_key(password, c)
+    keep = []
+    for bk in item.get("books", []):
+        K = xor_bytes(P, b64d(bk))
+        try:
+            decrypt_bytes(item, K, c)      # this book matches the password -> it's theirs -> drop
+            continue
+        except Exception:
+            keep.append(bk)
+    item = dict(item)
+    item["books"] = keep
+    return item
+
 
 # ---------- helpers ----------
 def norm(cfg):

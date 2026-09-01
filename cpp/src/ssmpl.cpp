@@ -151,5 +151,16 @@ Item add_password(const Item& item, const std::string& new_password, const std::
     it.books.push_back(b64e(compute_book(P, K)));
     return it;
 }
+Item remove_password(const Item& item, const std::string& password, const Config& cfg) {
+    std::vector<uint8_t> P = derive_key(password, cfg);
+    Item it = item; it.books.clear();
+    for (const auto& bk : item.books) {
+        std::vector<uint8_t> K = xor_bytes(P, b64d(bk));
+        bool mine = false;
+        try { decrypt_bytes(item, K, cfg); mine = true; } catch (...) {}
+        if (!mine) it.books.push_back(bk);
+    }
+    return it;
+}
 
 } // namespace ssmpl

@@ -54,6 +54,8 @@ std::string decrypt_item(const Item& item, const std::string& password, const Co
 // append a 密本 for a new password using an existing password to recover K (no re-encryption)
 Item add_password(const Item& item, const std::string& new_password, const std::string& unlock_password,
                   const Config& cfg);
+// drop a password's 密本 from one item (revoke access). No re-encryption.
+Item remove_password(const Item& item, const std::string& password, const Config& cfg);
 
 } // namespace ssmpl
 #endif // SSMPL_HPP

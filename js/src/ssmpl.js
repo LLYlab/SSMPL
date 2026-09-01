@@ -162,6 +162,22 @@ async function addPassword(item, newPassword, unlockPassword, cfg) {
   return next;
 }
 
+// Revoke access for a given password on ONE item: drop that password's 密本 (no re-encrypt).
+async function removePassword(item, password, cfg) {
+  const c = normalizeConfig(cfg);
+  const P = await deriveKey(password, c);
+  const next = JSON.parse(JSON.stringify(item));
+  const keep = [];
+  for (const bk of next.books || []) {
+    const K = xorBytes(P, b64d(bk));
+    let mine = false;
+    try { await decryptBytes(next, K, c); mine = true; } catch (_) { }
+    if (!mine) keep.push(bk);                     // a book that decrypts = this password's -> drop
+  }
+  next.books = keep;
+  return next;
+}
+
 // ---------- frontend lock (load a blob, unlock with a password, decrypt) ----------
 class Lock {
   constructor(blob, cfg) {
@@ -207,5 +223,5 @@ class Lock {
 
 export {
   DEFAULT_CONFIG, b64e, b64d, deriveKey, encryptBytes, decryptBytes, computeBook,
-  encryptItem, getKey, decryptItem, addPassword, Lock, xorBytes,
+  encryptItem, getKey, decryptItem, addPassword, removePassword, Lock, xorBytes,
 };

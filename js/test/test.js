@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {
-  b64e, b64d, deriveKey, encryptItem, decryptItem, addPassword, getKey, Lock,
+  b64e, b64d, deriveKey, encryptItem, decryptItem, addPassword, removePassword, getKey, Lock,
 } from '../src/ssmpl.js';
 import { randomBytes } from 'node:crypto';
 
@@ -50,6 +50,15 @@ check('decrypt story', (await lock.decrypt('story')) === '黄文正文·第一�
 const lockCbc = new Lock(JSON.parse(JSON.stringify({ ...blob, items: { c: itemC }, cipher: 'AES-256-CBC-HMAC-SHA256' })));
 check('Lock(unlock beta on CBC item) succeeds', (await lockCbc.unlock('cbc1')) === true);
 check('Lock(decrypt CBC item)', (await lockCbc.decrypt('c')) === 'cbc-mode data 数据');
+
+console.log('# per-user gating: grant via addPassword, revoke via removePassword (no re-encrypt)');
+// admin owns the article; grant 张三 (zhang) and 李四 (li) different access by book presence
+const articleA = await addPassword(item, 'zhang', 'alpha', CFG);   // 张三 can read A
+const articleA2 = await removePassword(articleA, 'beta', CFG);      // revoke beta from A
+check('zhang reads A after grant', (await decryptItem(articleA2, 'zhang', CFG)) === '黄文正文·第一章 secret content');
+let zhangNoA = false; try { await decryptItem(articleA2, 'beta', CFG); } catch (_) { zhangNoA = true; }
+check('beta revoked from A (cannot read)', zhangNoA === true);
+check('revoke kept ciphertext unchanged', articleA2.ct === item.ct && articleA2.iv === item.iv);
 
 console.log('# setters');
 const lock2 = new Lock(re).setHash('SHA-256').setIterations(250000).setCipher('AES-256-GCM');
